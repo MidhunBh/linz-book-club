@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Book Club</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div id="app" class="min-h-screen flex flex-col">
+
+  <header class="text-center py-8 border-b border-[#b8c6bb]">
+    <h1 class="text-2xl font-semibold text-heading">Linz English Book Club</h1>
+  </header>
+
+  <app-nav></app-nav>
+
+  <main class="flex-1 flex items-center justify-center p-6">
+    <div class="w-full max-w-md">
+      <section class="card">
+        <h1 class="text-xl font-semibold text-center text-heading">Member Login</h1>
+        <p class="text-sm text-center text-muted mt-2 mb-6">
+          access discussions, journals, and suggestions
+        </p>
+        <form class="space-y-4">
+          <div>
+            <label class="input-label">email</label>
+            <input type="email" class="input-field">
+          </div>
+          <div>
+            <label class="input-label">password</label>
+            <input type="password" class="input-field">
+          </div>
+          <button class="btn-primary btn-primary-full">login</button>
+        </form>
+        <p class="text-xs text-center text-accent mt-4">
+          new here? join discussions from the forum page
+        </p>
+      </section>
+    </div>
+  </main>
+
+  <app-footer></app-footer>
+
+</div>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="components.js"></script>
+<script src="app.js"></script>
+<script>
+  createBookClubApp().mount('#app');
+</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fantasy Reading Group</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div id="app">
+
+  <header class="text-center py-8 border-b border-[#b8c6bb]">
+    <h1 class="text-2xl font-semibold">Fantasy Reading Group</h1>
+    <p class="text-muted text-sm mt-1">myth, world-building, slow immersion reading</p>
+  </header>
+
+  <app-nav page="fantasy"></app-nav>
+
+  <main class="max-w-6xl mx-auto p-6 space-y-6">
+
+    <section class="card">
+      <p class="text-sm text-muted leading-relaxed">
+        This group focuses on fantasy series, mythology-inspired fiction, and immersive world-building.
+        Discussions are more informal and often continue across multiple sessions.
+      </p>
+    </section>
+
+    <p v-if="loading" class="text-muted text-sm text-center">loading books...</p>
+    <p v-if="error"   class="text-red-500 text-sm text-center">{{ error }}</p>
+
+    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <book-card
+        v-for="book in books"
+        :key="book.id"
+        :title="book.title"
+        :description="book.description">
+      </book-card>
+    </section>
+
+    <section class="card">
+      <img src="ai.jpg" alt="fantasy group visual"
+        class="w-full rounded-md border border-[#b8c6bb] object-cover" />
+    </section>
+
+  </main>
+
+  <app-footer></app-footer>
+
+</div>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="components.js"></script>
+<script src="app.js"></script>
+<script src="api.js"></script>
+<script>
+
+  const BookCard = {
+    props: ['title', 'description'],
+    template: `
+      <div class="card">
+        <h3 class="card-title">{{ title }}</h3>
+        <p class="text-sm text-muted leading-relaxed">{{ description }}</p>
+      </div>
+    `
+  };
+
+  createBookClubApp({
+    data() {
+      return { books: [], loading: false, error: null }
+    },
+
+    async mounted() {
+      this.loading = true;
+      try {
+        this.books = await api.getBooks('Fantasy');
+      } catch (e) {
+        this.error = 'Could not load books. Is the backend running?';
+      } finally {
+        this.loading = false;
+      }
+    }
+  })
+  .component('book-card', BookCard)
+  .mount('#app');
+
+</script>
+</body>
+</html>

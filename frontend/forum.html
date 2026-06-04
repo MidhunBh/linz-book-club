@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Members Forum</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div id="app">
+
+  <header class="text-center py-8 border-b border-[#b8c6bb]">
+    <h1 class="text-2xl font-semibold">Members Forum</h1>
+    <p class="text-muted text-sm mt-1">a quiet space for reading notes, reflections, and thoughts</p>
+  </header>
+
+  <app-nav page="forum"></app-nav>
+
+  <main class="max-w-4xl mx-auto p-6 space-y-6">
+
+    <section class="card">
+      <h2 class="card-title">today's prompt</h2>
+      <p class="text-sm text-muted">
+        What idea from your current reading stayed with you longer than expected?
+      </p>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">write a reflection</h2>
+      <form @submit.prevent="addPost" class="space-y-4">
+        <div>
+          <label class="input-label">title</label>
+          <input v-model="newPost.title" type="text" class="input-field">
+        </div>
+        <div>
+          <label class="input-label">your thoughts</label>
+          <textarea v-model="newPost.content" rows="5" class="input-field"></textarea>
+        </div>
+        <div>
+          <label class="input-label">tag</label>
+          <select v-model="newPost.tag" class="input-field">
+            <option>general</option>
+            <option>main group</option>
+            <option>fantasy</option>
+            <option>quote</option>
+          </select>
+        </div>
+        <button class="btn-primary" :disabled="loading">
+          {{ loading ? 'posting...' : 'post entry' }}
+        </button>
+      </form>
+    </section>
+
+    <!-- loading / error states -->
+    <p v-if="loading && posts.length === 0" class="text-muted text-sm text-center">loading posts...</p>
+    <p v-if="error" class="text-red-500 text-sm text-center">{{ error }}</p>
+
+    <section class="space-y-4">
+      <forum-post
+        v-for="post in posts"
+        :key="post.id"
+        :post="post"
+        @delete="removePost">
+      </forum-post>
+    </section>
+
+  </main>
+
+  <app-footer></app-footer>
+
+</div>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="components.js"></script>
+<script src="app.js"></script>
+<script src="api.js"></script>
+<script>
+
+  const ForumPost = {
+    props: ['post'],
+    emits: ['delete'],
+    template: `
+      <article class="card">
+        <h3 class="card-title">{{ post.title }}</h3>
+        <p class="text-sm text-muted mt-2">{{ post.content }}</p>
+        <p class="tag">tag: {{ post.tag }}</p>
+        <button @click="$emit('delete', post.id)" class="btn-danger mt-2">delete</button>
+      </article>
+    `
+  };
+
+  createBookClubApp({
+    data() {
+      return {
+        posts:   [],
+        newPost: { title: '', content: '', tag: 'general', username: 'alice' },
+        loading: false,
+        error:   null,
+      }
+    },
+
+    async mounted() {
+      // load posts from the backend when the page opens
+      this.loading = true;
+      try {
+        this.posts = await api.getPosts();
+      } catch (e) {
+        this.error = 'Could not load posts. Is the backend running?';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    methods: {
+      async addPost() {
+        if (!this.newPost.title.trim()) return;
+        this.loading = true;
+        try {
+          const created = await api.addPost(this.newPost);
+          this.posts.unshift(created);
+          this.newPost = { title: '', content: '', tag: 'general', username: 'alice' };
+        } catch (e) {
+          this.error = 'Could not save post.';
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async removePost(id) {
+        try {
+          await api.deletePost(id);
+          this.posts = this.posts.filter(p => p.id !== id);
+        } catch (e) {
+          this.error = 'Could not delete post.';
+        }
+      }
+    }
+  })
+  .component('forum-post', ForumPost)
+  .mount('#app');
+
+</script>
+</body>
+</html>

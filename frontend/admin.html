@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organizer Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+<div id="app">
+
+  <header class="text-center py-10 border-b border-[#b8c6bb]">
+    <h1 class="text-3xl font-semibold">Linz English Book Club</h1>
+    <h2 class="text-lg text-muted mt-1">Organizer Dashboard</h2>
+  </header>
+
+  <app-nav page="admin"></app-nav>
+
+  <main class="max-w-5xl mx-auto p-6 space-y-6">
+
+    <section class="card">
+      <h3 class="card-title text-lg">Add a Book Suggestion</h3>
+      <form @submit.prevent="addBook" class="space-y-4">
+        <div>
+          <label class="input-label">Book Title</label>
+          <input v-model="newBook.title" type="text" class="input-field">
+        </div>
+        <div>
+          <label class="input-label">Description</label>
+          <textarea v-model="newBook.description" rows="3" class="input-field"></textarea>
+        </div>
+        <div>
+          <label class="input-label">Category</label>
+          <select v-model="newBook.category" class="input-field">
+            <option value="Common">Common</option>
+            <option value="Fantasy">Fantasy</option>
+          </select>
+        </div>
+        <button class="btn-primary" :disabled="loading">
+          {{ loading ? 'saving...' : 'Submit' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h3 class="card-title text-lg">Submitted Books (Book Pool)</h3>
+
+      <p v-if="loading && books.length === 0" class="text-muted text-sm">loading books...</p>
+      <p v-if="error" class="text-red-500 text-sm mb-3">{{ error }}</p>
+
+      <div class="overflow-x-auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Category</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <book-row
+              v-for="book in books"
+              :key="book.id"
+              :book="book"
+              @delete="removeBook">
+            </book-row>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <app-footer></app-footer>
+
+</div>
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="components.js"></script>
+<script src="app.js"></script>
+<script src="api.js"></script>
+<script>
+
+  const BookRow = {
+    props: ['book'],
+    emits: ['delete'],
+    template: `
+      <tr>
+        <td>{{ book.title }}</td>
+        <td>{{ book.description }}</td>
+        <td>{{ book.category }}</td>
+        <td><button @click="$emit('delete', book.id)" class="btn-danger">delete</button></td>
+      </tr>
+    `
+  };
+
+  createBookClubApp({
+    data() {
+      return {
+        books:   [],
+        newBook: { title: '', description: '', category: 'Common', suggested_by: 'alice' },
+        loading: false,
+        error:   null,
+      }
+    },
+
+    async mounted() {
+      // load the full book pool from the backend when the page opens
+      this.loading = true;
+      try {
+        this.books = await api.getBooks();
+      } catch (e) {
+        this.error = 'Could not load books. Is the backend running?';
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    methods: {
+      async addBook() {
+        if (!this.newBook.title.trim()) return;
+        this.loading = true;
+        try {
+          const created = await api.addBook(this.newBook);
+          this.books.push(created);
+          this.newBook = { title: '', description: '', category: 'Common', suggested_by: 'alice' };
+        } catch (e) {
+          this.error = 'Could not add book.';
+        } finally {
+          this.loading = false;
+        }
+      },
+
+      async removeBook(id) {
+        try {
+          await api.deleteBook(id);
+          this.books = this.books.filter(b => b.id !== id);
+        } catch (e) {
+          this.error = 'Could not delete book.';
+        }
+      }
+    }
+  })
+  .component('book-row', BookRow)
+  .mount('#app');
+
+</script>
+</body>
+</html>
