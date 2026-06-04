@@ -7,7 +7,7 @@
 // The backend must be running on http://localhost:3000
 // ─────────────────────────────────────────────────────────────────────────────
 
-const API_BASE = 'linz-book-club-production.up.railway.app';
+const API_BASE = 'https://linz-book-club-production.up.railway.app/api';
 
 const api = {
 
