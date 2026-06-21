@@ -10,7 +10,6 @@ const AppNav = {
         <li><a href="forum.html"     :class="['nav-link', { active: page === 'forum' }]">Forum</a></li>
         <li><a href="admin.html"     :class="['nav-link', { active: page === 'admin' }]">Organizer</a></li>
         <li><a href="login.html"     :class="['nav-link', { active: page === 'login' }]">Login</a></li>
-        <li><a href="profile.html"   :class="['nav-link', { active: page === 'profile' }]">Profile</a></li>
       </ul>
     </nav>
   `

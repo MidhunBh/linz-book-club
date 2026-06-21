@@ -13,7 +13,7 @@
 
   <header class="text-center py-8 border-b border-[#b8c6bb]">
     <h1 class="text-2xl font-semibold">Members Forum</h1>
-    <p class="text-muted text-sm mt-1">a quiet space for reading notes, reflections, and thoughts</p>
+    <p class="text-muted text-sm mt-1">reflections, thoughts, and book suggestions</p>
     <p class="text-xs mt-1" :class="connected ? 'text-green-600' : 'text-red-400'">
       {{ connected ? '● live' : '○ connecting...' }}
     </p>
@@ -27,11 +27,12 @@
       <h2 class="card-title">today's prompt</h2>
       <p class="text-sm text-muted">
         What idea from your current reading stayed with you longer than expected?
+        Or is there a book you think the group should read next?
       </p>
     </section>
 
     <section class="card">
-      <h2 class="card-title">write a reflection</h2>
+      <h2 class="card-title">write a post</h2>
       <form @submit.prevent="addPost" class="space-y-4">
         <div>
           <label class="input-label">title</label>
@@ -48,6 +49,7 @@
             <option>main group</option>
             <option>fantasy</option>
             <option>quote</option>
+            <option>book suggestion</option>
           </select>
         </div>
         <button class="btn-primary" :disabled="loading">
@@ -91,7 +93,13 @@
         </div>
         <p class="text-sm text-muted mt-2 leading-relaxed">{{ post.content }}</p>
         <div class="flex items-center justify-between mt-3">
-          <p class="tag" style="margin-top:0">tag: {{ post.tag }}</p>
+          <p class="tag" style="margin-top:0">
+            <span v-if="post.tag === 'book suggestion'"
+                  style="background:#dfe9e3; border:1px solid #b8c6bb; padding:1px 8px; border-radius:4px; color:#5f7f6b; font-weight:500;">
+              📚 book suggestion
+            </span>
+            <span v-else>tag: {{ post.tag }}</span>
+          </p>
           <button @click="$emit('delete', post._id)" class="btn-danger">delete</button>
         </div>
       </article>
@@ -116,14 +124,10 @@
       finally { this.loading = false; }
 
       this.socket = io(SOCKET_URL);
-      this.socket.on('connect',    () => { this.connected = true;  });
-      this.socket.on('disconnect', () => { this.connected = false; });
-      this.socket.on('new-post', (post) => {
-        if (!this.posts.some(p => p._id === post._id)) this.posts.unshift(post);
-      });
-      this.socket.on('post-deleted', ({ id }) => {
-        this.posts = this.posts.filter(p => p._id !== id);
-      });
+      this.socket.on('connect',      () => { this.connected = true;  });
+      this.socket.on('disconnect',   () => { this.connected = false; });
+      this.socket.on('new-post',     (post) => { if (!this.posts.some(p => p._id === post._id)) this.posts.unshift(post); });
+      this.socket.on('post-deleted', ({ id }) => { this.posts = this.posts.filter(p => p._id !== id); });
     },
     unmounted() { if (this.socket) this.socket.disconnect(); },
     methods: {

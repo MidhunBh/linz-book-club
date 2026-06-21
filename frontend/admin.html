@@ -23,9 +23,12 @@
 
   <main class="max-w-5xl mx-auto p-6 space-y-6">
 
-    <!-- ADD BOOK FORM -->
+    <!-- UPDATE FUTURE LIST FORM -->
     <section class="card">
-      <h3 class="card-title text-lg">Add a Book Suggestion</h3>
+      <h3 class="card-title text-lg">Update Future Reading List</h3>
+      <p class="text-sm text-muted mb-4">
+        Add a book to the upcoming reading list. It will appear on the Main Group or Fantasy Group page depending on the category selected.
+      </p>
       <form @submit.prevent="addBook" class="space-y-4">
         <div>
           <label class="input-label">Book Title</label>
@@ -38,33 +41,29 @@
         <div>
           <label class="input-label">Category</label>
           <select v-model="newBook.category" class="input-field">
-            <option value="Common">Common</option>
-            <option value="Fantasy">Fantasy</option>
+            <option value="Common">Common — appears on Main Group page</option>
+            <option value="Fantasy">Fantasy — appears on Fantasy Group page</option>
           </select>
         </div>
         <button class="btn-primary" :disabled="loading">
-          {{ loading ? 'saving...' : 'Submit' }}
+          {{ loading ? 'saving...' : 'Add to List' }}
         </button>
       </form>
     </section>
 
-    <!-- BOOK POOL — div grid avoids browser table-parsing issues with Vue CDN -->
+    <!-- CURRENT BOOK POOL -->
     <section class="card">
-      <h3 class="card-title text-lg">Submitted Books (Book Pool)</h3>
+      <h3 class="card-title text-lg">Current Reading List (Book Pool)</h3>
       <p v-if="loading && books.length === 0" class="text-muted text-sm">loading books...</p>
       <p v-if="error" class="text-red-500 text-sm mb-3">{{ error }}</p>
 
       <div class="overflow-x-auto">
-
-        <!-- HEADER ROW — always on top, never moves -->
         <div style="display:grid; grid-template-columns:22% 50% 16% 12%; background:#cfdcd4; border:1px solid #b8c6bb;">
           <div class="p-3 font-semibold text-sm text-heading">Title</div>
           <div class="p-3 font-semibold text-sm text-heading">Description</div>
           <div class="p-3 font-semibold text-sm text-heading">Category</div>
           <div class="p-3 font-semibold text-sm text-heading">Action</div>
         </div>
-
-        <!-- DATA ROWS rendered with v-for -->
         <div v-for="book in books" :key="book._id"
              style="display:grid; grid-template-columns:22% 50% 16% 12%; border-left:1px solid #b8c6bb; border-right:1px solid #b8c6bb; border-bottom:1px solid #b8c6bb;">
           <div class="p-3 text-sm font-medium" style="border-right:1px solid #b8c6bb;">{{ book.title }}</div>
@@ -74,7 +73,6 @@
             <button @click="removeBook(book._id)" class="btn-danger">delete</button>
           </div>
         </div>
-
       </div>
     </section>
 
@@ -105,7 +103,6 @@
       try { this.books = await api.getBooks(); }
       catch (e) { this.error = 'Could not load books. Is the backend running?'; }
       finally { this.loading = false; }
-
       this.socket = io(SOCKET_URL);
       this.socket.on('connect',      () => { this.connected = true;  });
       this.socket.on('disconnect',   () => { this.connected = false; });
@@ -117,8 +114,10 @@
       async addBook() {
         if (!this.newBook.title.trim()) return;
         this.loading = true;
-        try { await api.addBook(this.newBook); this.newBook = { title: '', description: '', category: 'Common', suggested_by: 'alice' }; }
-        catch (e) { this.error = 'Could not add book.'; }
+        try {
+          await api.addBook(this.newBook);
+          this.newBook = { title: '', description: '', category: 'Common', suggested_by: 'alice' };
+        } catch (e) { this.error = 'Could not add book.'; }
         finally { this.loading = false; }
       },
       async removeBook(id) {
