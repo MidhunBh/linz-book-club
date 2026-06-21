@@ -14,6 +14,10 @@
   <header class="text-center py-8 border-b border-[#b8c6bb]">
     <h1 class="text-2xl font-semibold">Members Forum</h1>
     <p class="text-muted text-sm mt-1">a quiet space for reading notes, reflections, and thoughts</p>
+    <!-- live indicator shows when socket is connected -->
+    <p class="text-xs mt-1" :class="connected ? 'text-green-600' : 'text-red-400'">
+      {{ connected ? '● live' : '○ connecting...' }}
+    </p>
   </header>
 
   <app-nav page="forum"></app-nav>
@@ -53,14 +57,13 @@
       </form>
     </section>
 
-    <!-- loading / error states -->
     <p v-if="loading && posts.length === 0" class="text-muted text-sm text-center">loading posts...</p>
     <p v-if="error" class="text-red-500 text-sm text-center">{{ error }}</p>
 
     <section class="space-y-4">
       <forum-post
         v-for="post in posts"
-        :key="post.id"
+        :key="post._id"
         :post="post"
         @delete="removePost">
       </forum-post>
@@ -71,7 +74,10 @@
   <app-footer></app-footer>
 
 </div>
+
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<!-- Socket.io client — must match the version on the server -->
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script src="components.js"></script>
 <script src="app.js"></script>
 <script src="api.js"></script>
@@ -85,7 +91,7 @@
         <h3 class="card-title">{{ post.title }}</h3>
         <p class="text-sm text-muted mt-2">{{ post.content }}</p>
         <p class="tag">tag: {{ post.tag }}</p>
-        <button @click="$emit('delete', post.id)" class="btn-danger mt-2">delete</button>
+        <button @click="$emit('delete', post._id)" class="btn-danger mt-2">delete</button>
       </article>
     `
   };
@@ -93,15 +99,17 @@
   createBookClubApp({
     data() {
       return {
-        posts:   [],
-        newPost: { title: '', content: '', tag: 'general', username: 'alice' },
-        loading: false,
-        error:   null,
+        posts:     [],
+        newPost:   { title: '', content: '', tag: 'general', username: 'alice' },
+        loading:   false,
+        error:     null,
+        connected: false,
+        socket:    null,
       }
     },
 
     async mounted() {
-      // load posts from the backend when the page opens
+      // 1. load existing posts from the backend
       this.loading = true;
       try {
         this.posts = await api.getPosts();
@@ -110,6 +118,34 @@
       } finally {
         this.loading = false;
       }
+
+      // 2. connect to Socket.io
+      this.socket = io(SOCKET_URL);
+
+      this.socket.on('connect', () => {
+        this.connected = true;
+      });
+
+      this.socket.on('disconnect', () => {
+        this.connected = false;
+      });
+
+      // when another user posts a reflection, add it to the top of the list
+      this.socket.on('new-post', (post) => {
+        const alreadyExists = this.posts.some(p => p._id === post._id);
+        if (!alreadyExists) {
+          this.posts.unshift(post);
+        }
+      });
+
+      // when another user deletes a post, remove it from the list
+      this.socket.on('post-deleted', ({ id }) => {
+        this.posts = this.posts.filter(p => p._id !== id);
+      });
+    },
+
+    unmounted() {
+      if (this.socket) this.socket.disconnect();
     },
 
     methods: {
@@ -117,8 +153,9 @@
         if (!this.newPost.title.trim()) return;
         this.loading = true;
         try {
-          const created = await api.addPost(this.newPost);
-          this.posts.unshift(created);
+          // the backend saves the post AND broadcasts it via socket
+          // so we don't manually push here — the socket event adds it
+          await api.addPost(this.newPost);
           this.newPost = { title: '', content: '', tag: 'general', username: 'alice' };
         } catch (e) {
           this.error = 'Could not save post.';
@@ -129,8 +166,8 @@
 
       async removePost(id) {
         try {
+          // the backend deletes AND broadcasts — socket event removes it from list
           await api.deletePost(id);
-          this.posts = this.posts.filter(p => p.id !== id);
         } catch (e) {
           this.error = 'Could not delete post.';
         }

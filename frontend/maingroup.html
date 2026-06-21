@@ -28,10 +28,9 @@
       <section class="space-y-4">
         <p v-if="loading" class="text-muted text-sm">loading books...</p>
         <p v-if="error"   class="text-red-500 text-sm">{{ error }}</p>
-
         <book-entry
           v-for="book in books"
-          :key="book.id"
+          :key="book._id"
           :title="book.title"
           :description="book.description">
         </book-entry>
@@ -63,7 +62,6 @@
     data() {
       return { books: [], loading: false, error: null }
     },
-
     async mounted() {
       this.loading = true;
       try {

@@ -33,7 +33,7 @@
     <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <book-card
         v-for="book in books"
-        :key="book.id"
+        :key="book._id"
         :title="book.title"
         :description="book.description">
       </book-card>
@@ -69,7 +69,6 @@
     data() {
       return { books: [], loading: false, error: null }
     },
-
     async mounted() {
       this.loading = true;
       try {

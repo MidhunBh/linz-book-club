@@ -14,6 +14,9 @@
   <header class="text-center py-10 border-b border-[#b8c6bb]">
     <h1 class="text-3xl font-semibold">Linz English Book Club</h1>
     <h2 class="text-lg text-muted mt-1">Organizer Dashboard</h2>
+    <p class="text-xs mt-1" :class="connected ? 'text-green-600' : 'text-red-400'">
+      {{ connected ? '● live' : '○ connecting...' }}
+    </p>
   </header>
 
   <app-nav page="admin"></app-nav>
@@ -46,10 +49,8 @@
 
     <section class="card">
       <h3 class="card-title text-lg">Submitted Books (Book Pool)</h3>
-
       <p v-if="loading && books.length === 0" class="text-muted text-sm">loading books...</p>
       <p v-if="error" class="text-red-500 text-sm mb-3">{{ error }}</p>
-
       <div class="overflow-x-auto">
         <table class="data-table">
           <thead>
@@ -63,7 +64,7 @@
           <tbody>
             <book-row
               v-for="book in books"
-              :key="book.id"
+              :key="book._id"
               :book="book"
               @delete="removeBook">
             </book-row>
@@ -77,7 +78,9 @@
   <app-footer></app-footer>
 
 </div>
+
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script src="components.js"></script>
 <script src="app.js"></script>
 <script src="api.js"></script>
@@ -91,7 +94,7 @@
         <td>{{ book.title }}</td>
         <td>{{ book.description }}</td>
         <td>{{ book.category }}</td>
-        <td><button @click="$emit('delete', book.id)" class="btn-danger">delete</button></td>
+        <td><button @click="$emit('delete', book._id)" class="btn-danger">delete</button></td>
       </tr>
     `
   };
@@ -99,15 +102,17 @@
   createBookClubApp({
     data() {
       return {
-        books:   [],
-        newBook: { title: '', description: '', category: 'Common', suggested_by: 'alice' },
-        loading: false,
-        error:   null,
+        books:     [],
+        newBook:   { title: '', description: '', category: 'Common', suggested_by: 'alice' },
+        loading:   false,
+        error:     null,
+        connected: false,
+        socket:    null,
       }
     },
 
     async mounted() {
-      // load the full book pool from the backend when the page opens
+      // 1. load existing books
       this.loading = true;
       try {
         this.books = await api.getBooks();
@@ -116,6 +121,29 @@
       } finally {
         this.loading = false;
       }
+
+      // 2. connect to Socket.io
+      this.socket = io(SOCKET_URL);
+
+      this.socket.on('connect',    () => { this.connected = true;  });
+      this.socket.on('disconnect', () => { this.connected = false; });
+
+      // when any client adds a book, it appears for everyone immediately
+      this.socket.on('new-book', (book) => {
+        const alreadyExists = this.books.some(b => b._id === book._id);
+        if (!alreadyExists) {
+          this.books.push(book);
+        }
+      });
+
+      // when any client deletes a book, it disappears for everyone immediately
+      this.socket.on('book-deleted', ({ id }) => {
+        this.books = this.books.filter(b => b._id !== id);
+      });
+    },
+
+    unmounted() {
+      if (this.socket) this.socket.disconnect();
     },
 
     methods: {
@@ -123,8 +151,7 @@
         if (!this.newBook.title.trim()) return;
         this.loading = true;
         try {
-          const created = await api.addBook(this.newBook);
-          this.books.push(created);
+          await api.addBook(this.newBook);
           this.newBook = { title: '', description: '', category: 'Common', suggested_by: 'alice' };
         } catch (e) {
           this.error = 'Could not add book.';
@@ -136,7 +163,6 @@
       async removeBook(id) {
         try {
           await api.deleteBook(id);
-          this.books = this.books.filter(b => b.id !== id);
         } catch (e) {
           this.error = 'Could not delete book.';
         }
