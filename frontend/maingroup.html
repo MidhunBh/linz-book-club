@@ -13,7 +13,7 @@
 
   <header class="text-center py-8 border-b border-[#b8c6bb]">
     <h1 class="text-2xl font-semibold">Main Reading Group</h1>
-    <p class="text-muted text-sm mt-1">four monthly reads</p>
+    <p class="text-muted text-sm mt-1">five reads across world fiction and literature</p>
   </header>
 
   <app-nav page="main"></app-nav>
@@ -21,17 +21,28 @@
   <main class="max-w-6xl mx-auto p-6">
     <div class="grid md:grid-cols-2 gap-6 items-start">
 
-      <section class="card">
-        <img src="ai2.jpg" alt="reading group" class="w-full rounded-md border border-[#b8c6bb]" />
-      </section>
+      <div class="space-y-4">
+        <section class="card">
+          <img src="ai2.jpg" alt="reading group" class="w-full rounded-md border border-[#b8c6bb]" />
+        </section>
+        <section class="card">
+          <p class="text-sm text-muted leading-relaxed">
+            The books listed here will be read across the upcoming months.
+            If you are new or thinking of joining, start with whichever title interests you most —
+            you do not need to wait for a scheduled session to begin reading.
+          </p>
+        </section>
+      </div>
 
       <section class="space-y-4">
         <p v-if="loading" class="text-muted text-sm">loading books...</p>
         <p v-if="error"   class="text-red-500 text-sm">{{ error }}</p>
+
         <book-entry
           v-for="book in books"
           :key="book._id"
           :title="book.title"
+          :author="book.author"
           :description="book.description">
         </book-entry>
       </section>
@@ -49,28 +60,35 @@
 <script>
 
   const BookEntry = {
-    props: ['title', 'description'],
+    props: ['title', 'author', 'description'],
+    computed: {
+      // everything before the first # is the plain description
+      descText() {
+        return this.description.split('#')[0].trim();
+      },
+      // everything from the first # onwards are the tags
+      descTags() {
+        const idx = this.description.indexOf('#');
+        return idx !== -1 ? this.description.slice(idx) : '';
+      }
+    },
     template: `
       <div class="card">
         <h3 class="card-title">{{ title }}</h3>
-        <p class="text-sm text-muted leading-relaxed">{{ description }}</p>
+        <p class="text-xs text-muted mb-2">{{ author }}</p>
+        <p class="text-sm text-muted leading-relaxed mb-2">{{ descText }}</p>
+        <p class="text-xs text-accent tracking-wide">{{ descTags }}</p>
       </div>
     `
   };
 
   createBookClubApp({
-    data() {
-      return { books: [], loading: false, error: null }
-    },
+    data() { return { books: [], loading: false, error: null } },
     async mounted() {
       this.loading = true;
-      try {
-        this.books = await api.getBooks('Common');
-      } catch (e) {
-        this.error = 'Could not load books. Is the backend running?';
-      } finally {
-        this.loading = false;
-      }
+      try { this.books = await api.getBooks('Common'); }
+      catch (e) { this.error = 'Could not load books. Is the backend running?'; }
+      finally { this.loading = false; }
     }
   })
   .component('book-entry', BookEntry)

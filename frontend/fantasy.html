@@ -22,8 +22,10 @@
 
     <section class="card">
       <p class="text-sm text-muted leading-relaxed">
-        This group focuses on fantasy series, mythology-inspired fiction, and immersive world-building.
-        Discussions are more informal and often continue across multiple sessions.
+        This group reads fantasy and speculative fiction — series, mythology-inspired work, and novels
+        that build their own cosmologies. Discussions are informal and usually run across multiple sessions.
+        The six books below will be read sometime in the upcoming months.
+        Start whichever one draws you in first — there is no fixed reading order.
       </p>
     </section>
 
@@ -35,6 +37,7 @@
         v-for="book in books"
         :key="book._id"
         :title="book.title"
+        :author="book.author"
         :description="book.description">
       </book-card>
     </section>
@@ -56,28 +59,23 @@
 <script>
 
   const BookCard = {
-    props: ['title', 'description'],
+    props: ['title', 'author', 'description'],
     template: `
       <div class="card">
         <h3 class="card-title">{{ title }}</h3>
+        <p class="text-xs text-muted mb-2">{{ author }}</p>
         <p class="text-sm text-muted leading-relaxed">{{ description }}</p>
       </div>
     `
   };
 
   createBookClubApp({
-    data() {
-      return { books: [], loading: false, error: null }
-    },
+    data() { return { books: [], loading: false, error: null } },
     async mounted() {
       this.loading = true;
-      try {
-        this.books = await api.getBooks('Fantasy');
-      } catch (e) {
-        this.error = 'Could not load books. Is the backend running?';
-      } finally {
-        this.loading = false;
-      }
+      try { this.books = await api.getBooks('Fantasy'); }
+      catch (e) { this.error = 'Could not load books. Is the backend running?'; }
+      finally { this.loading = false; }
     }
   })
   .component('book-card', BookCard)

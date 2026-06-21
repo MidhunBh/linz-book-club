@@ -23,6 +23,7 @@
 
   <main class="max-w-5xl mx-auto p-6 space-y-6">
 
+    <!-- ADD BOOK FORM -->
     <section class="card">
       <h3 class="card-title text-lg">Add a Book Suggestion</h3>
       <form @submit.prevent="addBook" class="space-y-4">
@@ -32,7 +33,7 @@
         </div>
         <div>
           <label class="input-label">Description</label>
-          <textarea v-model="newBook.description" rows="3" class="input-field"></textarea>
+          <textarea v-model="newBook.description" rows="2" class="input-field"></textarea>
         </div>
         <div>
           <label class="input-label">Category</label>
@@ -47,29 +48,33 @@
       </form>
     </section>
 
+    <!-- BOOK POOL — div grid avoids browser table-parsing issues with Vue CDN -->
     <section class="card">
       <h3 class="card-title text-lg">Submitted Books (Book Pool)</h3>
       <p v-if="loading && books.length === 0" class="text-muted text-sm">loading books...</p>
       <p v-if="error" class="text-red-500 text-sm mb-3">{{ error }}</p>
+
       <div class="overflow-x-auto">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Description</th>
-              <th>Category</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            <book-row
-              v-for="book in books"
-              :key="book._id"
-              :book="book"
-              @delete="removeBook">
-            </book-row>
-          </tbody>
-        </table>
+
+        <!-- HEADER ROW — always on top, never moves -->
+        <div style="display:grid; grid-template-columns:22% 50% 16% 12%; background:#cfdcd4; border:1px solid #b8c6bb;">
+          <div class="p-3 font-semibold text-sm text-heading">Title</div>
+          <div class="p-3 font-semibold text-sm text-heading">Description</div>
+          <div class="p-3 font-semibold text-sm text-heading">Category</div>
+          <div class="p-3 font-semibold text-sm text-heading">Action</div>
+        </div>
+
+        <!-- DATA ROWS rendered with v-for -->
+        <div v-for="book in books" :key="book._id"
+             style="display:grid; grid-template-columns:22% 50% 16% 12%; border-left:1px solid #b8c6bb; border-right:1px solid #b8c6bb; border-bottom:1px solid #b8c6bb;">
+          <div class="p-3 text-sm font-medium" style="border-right:1px solid #b8c6bb;">{{ book.title }}</div>
+          <div class="p-3 text-xs text-muted leading-relaxed" style="border-right:1px solid #b8c6bb;">{{ book.description }}</div>
+          <div class="p-3 text-sm" style="border-right:1px solid #b8c6bb;">{{ book.category }}</div>
+          <div class="p-3">
+            <button @click="removeBook(book._id)" class="btn-danger">delete</button>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -78,27 +83,12 @@
   <app-footer></app-footer>
 
 </div>
-
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script src="components.js"></script>
 <script src="app.js"></script>
 <script src="api.js"></script>
 <script>
-
-  const BookRow = {
-    props: ['book'],
-    emits: ['delete'],
-    template: `
-      <tr>
-        <td>{{ book.title }}</td>
-        <td>{{ book.description }}</td>
-        <td>{{ book.category }}</td>
-        <td><button @click="$emit('delete', book._id)" class="btn-danger">delete</button></td>
-      </tr>
-    `
-  };
-
   createBookClubApp({
     data() {
       return {
@@ -110,68 +100,33 @@
         socket:    null,
       }
     },
-
     async mounted() {
-      // 1. load existing books
       this.loading = true;
-      try {
-        this.books = await api.getBooks();
-      } catch (e) {
-        this.error = 'Could not load books. Is the backend running?';
-      } finally {
-        this.loading = false;
-      }
+      try { this.books = await api.getBooks(); }
+      catch (e) { this.error = 'Could not load books. Is the backend running?'; }
+      finally { this.loading = false; }
 
-      // 2. connect to Socket.io
       this.socket = io(SOCKET_URL);
-
-      this.socket.on('connect',    () => { this.connected = true;  });
-      this.socket.on('disconnect', () => { this.connected = false; });
-
-      // when any client adds a book, it appears for everyone immediately
-      this.socket.on('new-book', (book) => {
-        const alreadyExists = this.books.some(b => b._id === book._id);
-        if (!alreadyExists) {
-          this.books.push(book);
-        }
-      });
-
-      // when any client deletes a book, it disappears for everyone immediately
-      this.socket.on('book-deleted', ({ id }) => {
-        this.books = this.books.filter(b => b._id !== id);
-      });
+      this.socket.on('connect',      () => { this.connected = true;  });
+      this.socket.on('disconnect',   () => { this.connected = false; });
+      this.socket.on('new-book',     (book) => { if (!this.books.some(b => b._id === book._id)) this.books.push(book); });
+      this.socket.on('book-deleted', ({ id }) => { this.books = this.books.filter(b => b._id !== id); });
     },
-
-    unmounted() {
-      if (this.socket) this.socket.disconnect();
-    },
-
+    unmounted() { if (this.socket) this.socket.disconnect(); },
     methods: {
       async addBook() {
         if (!this.newBook.title.trim()) return;
         this.loading = true;
-        try {
-          await api.addBook(this.newBook);
-          this.newBook = { title: '', description: '', category: 'Common', suggested_by: 'alice' };
-        } catch (e) {
-          this.error = 'Could not add book.';
-        } finally {
-          this.loading = false;
-        }
+        try { await api.addBook(this.newBook); this.newBook = { title: '', description: '', category: 'Common', suggested_by: 'alice' }; }
+        catch (e) { this.error = 'Could not add book.'; }
+        finally { this.loading = false; }
       },
-
       async removeBook(id) {
-        try {
-          await api.deleteBook(id);
-        } catch (e) {
-          this.error = 'Could not delete book.';
-        }
+        try { await api.deleteBook(id); }
+        catch (e) { this.error = 'Could not delete book.'; }
       }
     }
-  })
-  .component('book-row', BookRow)
-  .mount('#app');
-
+  }).mount('#app');
 </script>
 </body>
 </html>
