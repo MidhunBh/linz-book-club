@@ -13,7 +13,7 @@
 
   <header class="text-center py-8 border-b border-[#b8c6bb]">
     <h1 class="text-2xl font-semibold">Fantasy Reading Group</h1>
-    <p class="text-muted text-sm mt-1">myth, world-building, slow immersion reading</p>
+    <p class="text-muted text-sm mt-1">six reads, July through December</p>
   </header>
 
   <app-nav page="fantasy"></app-nav>
@@ -23,9 +23,8 @@
     <section class="card">
       <p class="text-sm text-muted leading-relaxed">
         This group reads fantasy and speculative fiction — series, mythology-inspired work, and novels
-        that build their own cosmologies. Discussions are informal and usually run across multiple sessions.
-        The six books below will be read sometime in the upcoming months.
-        Start whichever one draws you in first — there is no fixed reading order.
+        that build their own cosmologies. Books are read in the order listed, one per month from July
+        through December. Exact meeting dates are announced closer to the time.
       </p>
     </section>
 
@@ -38,7 +37,8 @@
         :key="book._id"
         :title="book.title"
         :author="book.author"
-        :description="book.description">
+        :description="book.description"
+        :reading-month="book.readingMonth">
       </book-card>
     </section>
 
@@ -59,10 +59,15 @@
 <script>
 
   const BookCard = {
-    props: ['title', 'author', 'description'],
+    props: ['title', 'author', 'description', 'readingMonth'],
     template: `
       <div class="card">
-        <h3 class="card-title">{{ title }}</h3>
+        <div class="flex items-center gap-2 mb-2">
+          <span style="background:#5f7f6b; color:white; font-size:0.65rem; padding:2px 8px; border-radius:4px; font-weight:600; letter-spacing:0.05em;">
+            {{ readingMonth }}
+          </span>
+        </div>
+        <h3 class="card-title" style="margin-bottom:2px;">{{ title }}</h3>
         <p class="text-xs text-muted mb-2">{{ author }}</p>
         <p class="text-sm text-muted leading-relaxed">{{ description }}</p>
       </div>

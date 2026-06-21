@@ -6,6 +6,7 @@ const bookSchema = new mongoose.Schema({
   description:  { type: String, default: '' },
   category:     { type: String, required: true, enum: ['Common', 'Fantasy'] },
   suggested_by: { type: String, default: 'unknown' },
+  readingMonth: { type: String, default: '' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Book', bookSchema);

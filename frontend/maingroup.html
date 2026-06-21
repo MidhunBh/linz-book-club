@@ -13,7 +13,7 @@
 
   <header class="text-center py-8 border-b border-[#b8c6bb]">
     <h1 class="text-2xl font-semibold">Main Reading Group</h1>
-    <p class="text-muted text-sm mt-1">five reads across world fiction and literature</p>
+    <p class="text-muted text-sm mt-1">five reads, July through November</p>
   </header>
 
   <app-nav page="main"></app-nav>
@@ -27,9 +27,8 @@
         </section>
         <section class="card">
           <p class="text-sm text-muted leading-relaxed">
-            The books listed here will be read across the upcoming months.
-            If you are new or thinking of joining, start with whichever title interests you most —
-            you do not need to wait for a scheduled session to begin reading.
+            Books are read in the order listed, one per month starting in July.
+            Exact meeting dates are announced closer to the time — keep an eye on the home page.
           </p>
         </section>
       </div>
@@ -43,7 +42,8 @@
           :key="book._id"
           :title="book.title"
           :author="book.author"
-          :description="book.description">
+          :description="book.description"
+          :reading-month="book.readingMonth">
         </book-entry>
       </section>
 
@@ -60,23 +60,21 @@
 <script>
 
   const BookEntry = {
-    props: ['title', 'author', 'description'],
+    props: ['title', 'author', 'description', 'readingMonth'],
     computed: {
-      // everything before the first # is the plain description
-      descText() {
-        return this.description.split('#')[0].trim();
-      },
-      // everything from the first # onwards are the tags
-      descTags() {
-        const idx = this.description.indexOf('#');
-        return idx !== -1 ? this.description.slice(idx) : '';
-      }
+      descText() { return this.description.split('#')[0].trim(); },
+      descTags()  { const i = this.description.indexOf('#'); return i !== -1 ? this.description.slice(i) : ''; }
     },
     template: `
       <div class="card">
-        <h3 class="card-title">{{ title }}</h3>
+        <div class="flex items-center gap-2 mb-2">
+          <span style="background:#5f7f6b; color:white; font-size:0.65rem; padding:2px 8px; border-radius:4px; font-weight:600; letter-spacing:0.05em;">
+            {{ readingMonth }}
+          </span>
+        </div>
+        <h3 class="card-title" style="margin-bottom:2px;">{{ title }}</h3>
         <p class="text-xs text-muted mb-2">{{ author }}</p>
-        <p class="text-sm text-muted leading-relaxed mb-2">{{ descText }}</p>
+        <p class="text-sm text-muted leading-relaxed mb-1">{{ descText }}</p>
         <p class="text-xs text-accent tracking-wide">{{ descTags }}</p>
       </div>
     `

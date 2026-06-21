@@ -23,12 +23,11 @@
 
   <main class="max-w-5xl mx-auto p-6 space-y-6">
 
-    <!-- ── SECTION 1: UPDATE FUTURE READING LIST ──────────────────── -->
+    <!-- ── BOOKS ─────────────────────────────────────────────────── -->
     <section class="card">
       <h3 class="card-title text-lg">Update Future Reading List</h3>
       <p class="text-sm text-muted mb-4">
-        Add a book to the upcoming reading list. It will appear on the Main Group or Fantasy Group
-        page depending on the category selected.
+        Add a book to the upcoming reading list. It will appear on the Main Group or Fantasy Group page.
       </p>
       <form @submit.prevent="addBook" class="space-y-4">
         <div>
@@ -39,12 +38,25 @@
           <label class="input-label">Description</label>
           <textarea v-model="newBook.description" rows="2" class="input-field"></textarea>
         </div>
-        <div>
-          <label class="input-label">Category</label>
-          <select v-model="newBook.category" class="input-field">
-            <option value="Common">Common — appears on Main Group page</option>
-            <option value="Fantasy">Fantasy — appears on Fantasy Group page</option>
-          </select>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="input-label">Category</label>
+            <select v-model="newBook.category" class="input-field">
+              <option value="Common">Common — Main Group</option>
+              <option value="Fantasy">Fantasy — Fantasy Group</option>
+            </select>
+          </div>
+          <div>
+            <label class="input-label">Reading Month</label>
+            <select v-model="newBook.readingMonth" class="input-field">
+              <option value="July">July</option>
+              <option value="August">August</option>
+              <option value="September">September</option>
+              <option value="October">October</option>
+              <option value="November">November</option>
+              <option value="December">December</option>
+            </select>
+          </div>
         </div>
         <button class="btn-primary" :disabled="bookLoading">
           {{ bookLoading ? 'saving...' : 'Add to List' }}
@@ -57,15 +69,17 @@
       <p v-if="bookLoading && books.length === 0" class="text-muted text-sm">loading...</p>
       <p v-if="bookError" class="text-red-500 text-sm mb-3">{{ bookError }}</p>
       <div class="overflow-x-auto">
-        <div style="display:grid; grid-template-columns:22% 50% 16% 12%; background:#cfdcd4; border:1px solid #b8c6bb;">
+        <div style="display:grid; grid-template-columns:20% 12% 38% 18% 12%; background:#cfdcd4; border:1px solid #b8c6bb;">
           <div class="p-3 font-semibold text-sm text-heading">Title</div>
+          <div class="p-3 font-semibold text-sm text-heading">Month</div>
           <div class="p-3 font-semibold text-sm text-heading">Description</div>
           <div class="p-3 font-semibold text-sm text-heading">Category</div>
           <div class="p-3 font-semibold text-sm text-heading">Action</div>
         </div>
         <div v-for="book in books" :key="book._id"
-             style="display:grid; grid-template-columns:22% 50% 16% 12%; border-left:1px solid #b8c6bb; border-right:1px solid #b8c6bb; border-bottom:1px solid #b8c6bb;">
+             style="display:grid; grid-template-columns:20% 12% 38% 18% 12%; border-left:1px solid #b8c6bb; border-right:1px solid #b8c6bb; border-bottom:1px solid #b8c6bb;">
           <div class="p-3 text-sm font-medium" style="border-right:1px solid #b8c6bb;">{{ book.title }}</div>
+          <div class="p-3 text-sm text-muted" style="border-right:1px solid #b8c6bb;">{{ book.readingMonth }}</div>
           <div class="p-3 text-xs text-muted leading-relaxed" style="border-right:1px solid #b8c6bb;">{{ book.description }}</div>
           <div class="p-3 text-sm" style="border-right:1px solid #b8c6bb;">{{ book.category }}</div>
           <div class="p-3"><button @click="removeBook(book._id)" class="btn-danger">delete</button></div>
@@ -73,17 +87,17 @@
       </div>
     </section>
 
-    <!-- ── SECTION 2: SCHEDULE MEETINGS ───────────────────────────── -->
+    <!-- ── MEETINGS ───────────────────────────────────────────────── -->
     <section class="card">
       <h3 class="card-title text-lg">Schedule a Meeting</h3>
       <p class="text-sm text-muted mb-4">
-        Meetings added here appear on the Home page so members know when and where to show up.
+        Meetings added here appear on the Home page so members know when to show up.
       </p>
       <form @submit.prevent="addMeeting" class="space-y-4">
         <div>
           <label class="input-label">Title</label>
           <input v-model="newMeeting.title" type="text" class="input-field"
-            placeholder="e.g. June Discussion – Midnight's Children">
+            placeholder="e.g. October Discussion – Midnight's Children">
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
@@ -95,17 +109,15 @@
             <input v-model="newMeeting.time" type="time" class="input-field">
           </div>
         </div>
-        <div>
-          <label class="input-label">Location</label>
-          <input v-model="newMeeting.location" type="text" class="input-field">
-        </div>
-        <div>
-          <label class="input-label">Book being discussed</label>
-          <input v-model="newMeeting.book" type="text" class="input-field">
-        </div>
-        <div>
-          <label class="input-label">Notes</label>
-          <textarea v-model="newMeeting.description" rows="2" class="input-field"></textarea>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="input-label">Location</label>
+            <input v-model="newMeeting.location" type="text" class="input-field">
+          </div>
+          <div>
+            <label class="input-label">Book being discussed</label>
+            <input v-model="newMeeting.book" type="text" class="input-field">
+          </div>
         </div>
         <button class="btn-primary" :disabled="meetingLoading">
           {{ meetingLoading ? 'saving...' : 'Add Meeting' }}
@@ -117,17 +129,21 @@
       <h3 class="card-title text-lg">Scheduled Meetings</h3>
       <p v-if="meetingLoading && meetings.length === 0" class="text-muted text-sm">loading...</p>
       <p v-if="meetingError" class="text-red-500 text-sm mb-3">{{ meetingError }}</p>
-      <div class="space-y-3">
+      <div class="overflow-x-auto">
+        <div style="display:grid; grid-template-columns:30% 15% 10% 30% 15%; background:#cfdcd4; border:1px solid #b8c6bb;">
+          <div class="p-3 font-semibold text-sm text-heading">Title</div>
+          <div class="p-3 font-semibold text-sm text-heading">Date</div>
+          <div class="p-3 font-semibold text-sm text-heading">Time</div>
+          <div class="p-3 font-semibold text-sm text-heading">Book</div>
+          <div class="p-3 font-semibold text-sm text-heading">Action</div>
+        </div>
         <div v-for="meeting in meetings" :key="meeting._id"
-             class="border border-[#b8c6bb] rounded-lg p-4 flex justify-between items-start"
-             style="background:#eef4f0;">
-          <div>
-            <p class="font-medium text-heading text-sm">{{ meeting.title }}</p>
-            <p class="text-xs text-muted mt-1">📅 {{ meeting.date }} at {{ meeting.time }}</p>
-            <p class="text-xs text-muted">📍 {{ meeting.location }}</p>
-            <p v-if="meeting.book" class="text-xs text-accent mt-1">📖 {{ meeting.book }}</p>
-          </div>
-          <button @click="removeMeeting(meeting._id)" class="btn-danger flex-shrink-0 ml-4">delete</button>
+             style="display:grid; grid-template-columns:30% 15% 10% 30% 15%; border-left:1px solid #b8c6bb; border-right:1px solid #b8c6bb; border-bottom:1px solid #b8c6bb;">
+          <div class="p-3 text-sm font-medium" style="border-right:1px solid #b8c6bb;">{{ meeting.title }}</div>
+          <div class="p-3 text-sm text-muted" style="border-right:1px solid #b8c6bb;">{{ meeting.date }}</div>
+          <div class="p-3 text-sm text-muted" style="border-right:1px solid #b8c6bb;">{{ meeting.time }}</div>
+          <div class="p-3 text-sm text-accent" style="border-right:1px solid #b8c6bb;">{{ meeting.book }}</div>
+          <div class="p-3"><button @click="removeMeeting(meeting._id)" class="btn-danger">delete</button></div>
         </div>
       </div>
     </section>
@@ -146,41 +162,37 @@
   createBookClubApp({
     data() {
       return {
-        // books
-        books:       [],
-        newBook:     { title: '', description: '', category: 'Common', suggested_by: 'alice' },
-        bookLoading: false,
-        bookError:   null,
-        // meetings
+        books:          [],
+        newBook:        { title: '', description: '', category: 'Common', readingMonth: 'July', suggested_by: 'alice' },
+        bookLoading:    false,
+        bookError:      null,
         meetings:       [],
-        newMeeting:     { title: '', date: '', time: '', location: 'Thalia Linz – Landstraße', book: '', description: '' },
+        newMeeting:     { title: '', date: '', time: '', location: 'Thalia Linz – Landstraße', book: '' },
         meetingLoading: false,
         meetingError:   null,
-        // socket
-        connected: false,
-        socket:    null,
+        connected:      false,
+        socket:         null,
       }
     },
     async mounted() {
-      this.bookLoading = true;
-      this.meetingLoading = true;
+      this.bookLoading = this.meetingLoading = true;
       try { this.books    = await api.getBooks();    } catch (e) { this.bookError    = 'Could not load books.';    } finally { this.bookLoading    = false; }
       try { this.meetings = await api.getMeetings(); } catch (e) { this.meetingError = 'Could not load meetings.'; } finally { this.meetingLoading = false; }
 
       this.socket = io(SOCKET_URL);
-      this.socket.on('connect',          () => { this.connected = true;  });
-      this.socket.on('disconnect',       () => { this.connected = false; });
-      this.socket.on('new-book',         (b) => { if (!this.books.some(x => x._id === b._id))    this.books.push(b);    });
-      this.socket.on('book-deleted',     ({ id }) => { this.books    = this.books.filter(b => b._id !== id);    });
-      this.socket.on('new-meeting',      (m) => { if (!this.meetings.some(x => x._id === m._id)) this.meetings.push(m); });
-      this.socket.on('meeting-deleted',  ({ id }) => { this.meetings = this.meetings.filter(m => m._id !== id); });
+      this.socket.on('connect',         () => { this.connected = true;  });
+      this.socket.on('disconnect',      () => { this.connected = false; });
+      this.socket.on('new-book',        (b) => { if (!this.books.some(x => x._id === b._id))    this.books.push(b);    });
+      this.socket.on('book-deleted',    ({ id }) => { this.books    = this.books.filter(b => b._id !== id);    });
+      this.socket.on('new-meeting',     (m) => { if (!this.meetings.some(x => x._id === m._id)) this.meetings.push(m); });
+      this.socket.on('meeting-deleted', ({ id }) => { this.meetings = this.meetings.filter(m => m._id !== id); });
     },
     unmounted() { if (this.socket) this.socket.disconnect(); },
     methods: {
       async addBook() {
         if (!this.newBook.title.trim()) return;
         this.bookLoading = true;
-        try { await api.addBook(this.newBook); this.newBook = { title: '', description: '', category: 'Common', suggested_by: 'alice' }; }
+        try { await api.addBook(this.newBook); this.newBook = { title: '', description: '', category: 'Common', readingMonth: 'July', suggested_by: 'alice' }; }
         catch (e) { this.bookError = 'Could not add book.'; }
         finally { this.bookLoading = false; }
       },
@@ -190,7 +202,7 @@
       async addMeeting() {
         if (!this.newMeeting.title.trim() || !this.newMeeting.date) return;
         this.meetingLoading = true;
-        try { await api.addMeeting(this.newMeeting); this.newMeeting = { title: '', date: '', time: '', location: 'Thalia Linz – Landstraße', book: '', description: '' }; }
+        try { await api.addMeeting(this.newMeeting); this.newMeeting = { title: '', date: '', time: '', location: 'Thalia Linz – Landstraße', book: '' }; }
         catch (e) { this.meetingError = 'Could not add meeting.'; }
         finally { this.meetingLoading = false; }
       },
