@@ -23,11 +23,12 @@
 
   <main class="max-w-5xl mx-auto p-6 space-y-6">
 
-    <!-- UPDATE FUTURE LIST FORM -->
+    <!-- ── SECTION 1: UPDATE FUTURE READING LIST ──────────────────── -->
     <section class="card">
       <h3 class="card-title text-lg">Update Future Reading List</h3>
       <p class="text-sm text-muted mb-4">
-        Add a book to the upcoming reading list. It will appear on the Main Group or Fantasy Group page depending on the category selected.
+        Add a book to the upcoming reading list. It will appear on the Main Group or Fantasy Group
+        page depending on the category selected.
       </p>
       <form @submit.prevent="addBook" class="space-y-4">
         <div>
@@ -45,18 +46,16 @@
             <option value="Fantasy">Fantasy — appears on Fantasy Group page</option>
           </select>
         </div>
-        <button class="btn-primary" :disabled="loading">
-          {{ loading ? 'saving...' : 'Add to List' }}
+        <button class="btn-primary" :disabled="bookLoading">
+          {{ bookLoading ? 'saving...' : 'Add to List' }}
         </button>
       </form>
     </section>
 
-    <!-- CURRENT BOOK POOL -->
     <section class="card">
       <h3 class="card-title text-lg">Current Reading List (Book Pool)</h3>
-      <p v-if="loading && books.length === 0" class="text-muted text-sm">loading books...</p>
-      <p v-if="error" class="text-red-500 text-sm mb-3">{{ error }}</p>
-
+      <p v-if="bookLoading && books.length === 0" class="text-muted text-sm">loading...</p>
+      <p v-if="bookError" class="text-red-500 text-sm mb-3">{{ bookError }}</p>
       <div class="overflow-x-auto">
         <div style="display:grid; grid-template-columns:22% 50% 16% 12%; background:#cfdcd4; border:1px solid #b8c6bb;">
           <div class="p-3 font-semibold text-sm text-heading">Title</div>
@@ -69,9 +68,66 @@
           <div class="p-3 text-sm font-medium" style="border-right:1px solid #b8c6bb;">{{ book.title }}</div>
           <div class="p-3 text-xs text-muted leading-relaxed" style="border-right:1px solid #b8c6bb;">{{ book.description }}</div>
           <div class="p-3 text-sm" style="border-right:1px solid #b8c6bb;">{{ book.category }}</div>
-          <div class="p-3">
-            <button @click="removeBook(book._id)" class="btn-danger">delete</button>
+          <div class="p-3"><button @click="removeBook(book._id)" class="btn-danger">delete</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SECTION 2: SCHEDULE MEETINGS ───────────────────────────── -->
+    <section class="card">
+      <h3 class="card-title text-lg">Schedule a Meeting</h3>
+      <p class="text-sm text-muted mb-4">
+        Meetings added here appear on the Home page so members know when and where to show up.
+      </p>
+      <form @submit.prevent="addMeeting" class="space-y-4">
+        <div>
+          <label class="input-label">Title</label>
+          <input v-model="newMeeting.title" type="text" class="input-field"
+            placeholder="e.g. June Discussion – Midnight's Children">
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="input-label">Date</label>
+            <input v-model="newMeeting.date" type="date" class="input-field">
           </div>
+          <div>
+            <label class="input-label">Time</label>
+            <input v-model="newMeeting.time" type="time" class="input-field">
+          </div>
+        </div>
+        <div>
+          <label class="input-label">Location</label>
+          <input v-model="newMeeting.location" type="text" class="input-field">
+        </div>
+        <div>
+          <label class="input-label">Book being discussed</label>
+          <input v-model="newMeeting.book" type="text" class="input-field">
+        </div>
+        <div>
+          <label class="input-label">Notes</label>
+          <textarea v-model="newMeeting.description" rows="2" class="input-field"></textarea>
+        </div>
+        <button class="btn-primary" :disabled="meetingLoading">
+          {{ meetingLoading ? 'saving...' : 'Add Meeting' }}
+        </button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h3 class="card-title text-lg">Scheduled Meetings</h3>
+      <p v-if="meetingLoading && meetings.length === 0" class="text-muted text-sm">loading...</p>
+      <p v-if="meetingError" class="text-red-500 text-sm mb-3">{{ meetingError }}</p>
+      <div class="space-y-3">
+        <div v-for="meeting in meetings" :key="meeting._id"
+             class="border border-[#b8c6bb] rounded-lg p-4 flex justify-between items-start"
+             style="background:#eef4f0;">
+          <div>
+            <p class="font-medium text-heading text-sm">{{ meeting.title }}</p>
+            <p class="text-xs text-muted mt-1">📅 {{ meeting.date }} at {{ meeting.time }}</p>
+            <p class="text-xs text-muted">📍 {{ meeting.location }}</p>
+            <p v-if="meeting.book" class="text-xs text-accent mt-1">📖 {{ meeting.book }}</p>
+          </div>
+          <button @click="removeMeeting(meeting._id)" class="btn-danger flex-shrink-0 ml-4">delete</button>
         </div>
       </div>
     </section>
@@ -90,39 +146,56 @@
   createBookClubApp({
     data() {
       return {
-        books:     [],
-        newBook:   { title: '', description: '', category: 'Common', suggested_by: 'alice' },
-        loading:   false,
-        error:     null,
+        // books
+        books:       [],
+        newBook:     { title: '', description: '', category: 'Common', suggested_by: 'alice' },
+        bookLoading: false,
+        bookError:   null,
+        // meetings
+        meetings:       [],
+        newMeeting:     { title: '', date: '', time: '', location: 'Thalia Linz – Landstraße', book: '', description: '' },
+        meetingLoading: false,
+        meetingError:   null,
+        // socket
         connected: false,
         socket:    null,
       }
     },
     async mounted() {
-      this.loading = true;
-      try { this.books = await api.getBooks(); }
-      catch (e) { this.error = 'Could not load books. Is the backend running?'; }
-      finally { this.loading = false; }
+      this.bookLoading = true;
+      this.meetingLoading = true;
+      try { this.books    = await api.getBooks();    } catch (e) { this.bookError    = 'Could not load books.';    } finally { this.bookLoading    = false; }
+      try { this.meetings = await api.getMeetings(); } catch (e) { this.meetingError = 'Could not load meetings.'; } finally { this.meetingLoading = false; }
+
       this.socket = io(SOCKET_URL);
-      this.socket.on('connect',      () => { this.connected = true;  });
-      this.socket.on('disconnect',   () => { this.connected = false; });
-      this.socket.on('new-book',     (book) => { if (!this.books.some(b => b._id === book._id)) this.books.push(book); });
-      this.socket.on('book-deleted', ({ id }) => { this.books = this.books.filter(b => b._id !== id); });
+      this.socket.on('connect',          () => { this.connected = true;  });
+      this.socket.on('disconnect',       () => { this.connected = false; });
+      this.socket.on('new-book',         (b) => { if (!this.books.some(x => x._id === b._id))    this.books.push(b);    });
+      this.socket.on('book-deleted',     ({ id }) => { this.books    = this.books.filter(b => b._id !== id);    });
+      this.socket.on('new-meeting',      (m) => { if (!this.meetings.some(x => x._id === m._id)) this.meetings.push(m); });
+      this.socket.on('meeting-deleted',  ({ id }) => { this.meetings = this.meetings.filter(m => m._id !== id); });
     },
     unmounted() { if (this.socket) this.socket.disconnect(); },
     methods: {
       async addBook() {
         if (!this.newBook.title.trim()) return;
-        this.loading = true;
-        try {
-          await api.addBook(this.newBook);
-          this.newBook = { title: '', description: '', category: 'Common', suggested_by: 'alice' };
-        } catch (e) { this.error = 'Could not add book.'; }
-        finally { this.loading = false; }
+        this.bookLoading = true;
+        try { await api.addBook(this.newBook); this.newBook = { title: '', description: '', category: 'Common', suggested_by: 'alice' }; }
+        catch (e) { this.bookError = 'Could not add book.'; }
+        finally { this.bookLoading = false; }
       },
       async removeBook(id) {
-        try { await api.deleteBook(id); }
-        catch (e) { this.error = 'Could not delete book.'; }
+        try { await api.deleteBook(id); } catch (e) { this.bookError = 'Could not delete book.'; }
+      },
+      async addMeeting() {
+        if (!this.newMeeting.title.trim() || !this.newMeeting.date) return;
+        this.meetingLoading = true;
+        try { await api.addMeeting(this.newMeeting); this.newMeeting = { title: '', date: '', time: '', location: 'Thalia Linz – Landstraße', book: '', description: '' }; }
+        catch (e) { this.meetingError = 'Could not add meeting.'; }
+        finally { this.meetingLoading = false; }
+      },
+      async removeMeeting(id) {
+        try { await api.deleteMeeting(id); } catch (e) { this.meetingError = 'Could not delete meeting.'; }
       }
     }
   }).mount('#app');

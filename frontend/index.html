@@ -57,6 +57,26 @@
       </p>
     </section>
 
+    <!-- UPCOMING MEETINGS — read only, loaded from the database -->
+    <section class="card">
+      <h2 class="card-title text-lg">Upcoming Meetings</h2>
+      <p v-if="loading" class="text-muted text-sm">loading...</p>
+      <p v-if="!loading && meetings.length === 0" class="text-muted text-sm">
+        No meetings scheduled yet. Check back soon.
+      </p>
+      <div class="space-y-3 mt-2">
+        <div v-for="meeting in meetings" :key="meeting._id"
+             class="border-l-2 border-[#7fae8a] pl-4">
+          <p class="font-medium text-heading text-sm">{{ meeting.title }}</p>
+          <p class="text-xs text-muted mt-1">
+            📅 {{ meeting.date }} at {{ meeting.time }} &nbsp;·&nbsp; 📍 {{ meeting.location }}
+          </p>
+          <p v-if="meeting.book" class="text-xs text-accent mt-1">📖 {{ meeting.book }}</p>
+          <p v-if="meeting.description" class="text-xs text-muted mt-1">{{ meeting.description }}</p>
+        </div>
+      </div>
+    </section>
+
     <section class="card">
       <h2 class="card-title text-lg">Discussion Groups</h2>
       <p>Two groups currently exist:</p>
@@ -80,8 +100,17 @@
 <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 <script src="components.js"></script>
 <script src="app.js"></script>
+<script src="api.js"></script>
 <script>
-  createBookClubApp().mount('#app');
+  createBookClubApp({
+    data() { return { meetings: [], loading: false } },
+    async mounted() {
+      this.loading = true;
+      try { this.meetings = await api.getMeetings(); }
+      catch (e) { /* silently fail on home page */ }
+      finally { this.loading = false; }
+    }
+  }).mount('#app');
 </script>
 </body>
 </html>
